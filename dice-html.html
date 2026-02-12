@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategic Pillars Dice</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Inter', system-ui, sans-serif;
+    padding: 24px; gap: 24px;
+  }
+  h1 { color: #f1f5f9; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  .sub { color: #94a3b8; font-size: 14px; }
+  .dice {
+    width: 160px; height: 160px;
+    background: linear-gradient(145deg, #334155, #475569);
+    border-radius: 24px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s;
+  }
+  .dice.rolling {
+    box-shadow: 0 0 40px rgba(255,255,255,0.15);
+    animation: shake 0.12s infinite alternate;
+  }
+  .dice.revealed { box-shadow: 0 8px 40px var(--glow); }
+  @keyframes shake {
+    0% { transform: rotate(-8deg) scale(1.05); }
+    50% { transform: rotate(8deg) scale(0.95); }
+    100% { transform: rotate(-5deg) scale(1.02); }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes fadeUp {
+    0% { transform: translateY(10px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .result { min-height: 80px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .result-inner { animation: pop 0.4s ease-out; text-align: center; }
+  .result-emoji { font-size: 40px; margin-bottom: 4px; }
+  .result-text { font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+  .btn {
+    padding: 14px 40px; font-size: 16px; font-weight: 700; border-radius: 12px;
+    border: none; cursor: pointer; color: white; letter-spacing: 0.5px; transition: all 0.2s;
+  }
+  .btn-roll { background: linear-gradient(135deg, #3b82f6, #8b5cf6); box-shadow: 0 4px 20px rgba(59,130,246,0.4); }
+  .btn-roll:disabled { background: #475569; box-shadow: none; cursor: wait; }
+  .btn-reset { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 20px rgba(16,185,129,0.4); }
+  .history { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+  .history-item {
+    animation: fadeUp 0.3s ease-out;
+    padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+</style>
+</head>
+<body>
+  <h1>🎲 Strategic Pillars Dice</h1>
+  <p class="sub" id="subtext">Roll 1 of 4</p>
+  <div class="dice" id="dice">
+    <svg viewBox="0 0 100 100" width="65%" height="65%" id="diceSvg"></svg>
+  </div>
+  <div class="result" id="resultArea"></div>
+  <div id="btnArea">
+    <button class="btn btn-roll" id="rollBtn" onclick="roll()">🎲  Roll the Dice</button>
+  </div>
+  <div class="history" id="history"></div>
+
+<script>
+const FACES = ["Government", "Donor", "Senior Management", "Situation & Context"];
+const COLORS = ["#ef4444", "#3b82f6", "#a855f7", "#f59e0b"];
+const EMOJIS = ["🏛️", "🤝", "👔", "🌍"];
+const dotPatterns = {
+  1: [[50,50]],
+  2: [[25,25],[75,75]],
+  3: [[25,25],[50,50],[75,75]],
+  4: [[25,25],[75,25],[25,75],[75,75]],
+  5: [[25,25],[75,25],[50,50],[25,75],[75,75]],
+  6: [[25,25],[75,25],[25,50],[75,50],[25,75],[75,75]]
+};
+
+let rollIndex = -1, isRolling = false, iv;
+
+function drawDots(n) {
+  const svg = document.getElementById("diceSvg");
+  svg.innerHTML = "";
+  (dotPatterns[n] || dotPatterns[1]).forEach(([x,y]) => {
+    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",8); c.setAttribute("fill","white");
+    svg.appendChild(c);
+  });
+}
+
+function roll() {
+  if (isRolling || rollIndex >= FACES.length - 1) return;
+  isRolling = true;
+  const next = rollIndex + 1;
+  const dice = document.getElementById("dice");
+  const btn = document.getElementById("rollBtn");
+  btn.disabled = true; btn.textContent = "Rolling...";
+  dice.className = "dice rolling";
+  dice.style.background = "linear-gradient(145deg, #334155, #475569)";
+  document.getElementById("resultArea").innerHTML = "";
+
+  let tick = 0, max = 18;
+  iv = setInterval(() => {
+    tick++;
+    drawDots(Math.floor(Math.random()*6)+1);
+    if (tick >= max) {
+      clearInterval(iv);
+      drawDots(next+1);
+      rollIndex = next;
+      isRolling = false;
+      const c = COLORS[next];
+      dice.className = "dice revealed";
+      dice.style.background = `linear-gradient(145deg, ${c}dd, ${c})`;
+      dice.style.setProperty("--glow", c + "44");
+
+      document.getElementById("resultArea").innerHTML = `
+        <div class="result-inner">
+          <div class="result-emoji">${EMOJIS[next]}</div>
+          <div class="result-text" style="color:${c}">${FACES[next]}</div>
+        </div>`;
+
+      const hi = document.getElementById("history");
+      hi.innerHTML += `<div class="history-item" style="background:${c}22;border:1px solid ${c}44;color:${c}">
+        <span>${EMOJIS[next]}</span><span>Roll ${next+1}: ${FACES[next]}</span></div>`;
+
+      if (next >= FACES.length - 1) {
+        document.getElementById("subtext").textContent = "All pillars revealed!";
+        document.getElementById("btnArea").innerHTML = `<button class="btn btn-reset" onclick="resetAll()">🔄  Start Over</button>`;
+      } else {
+        document.getElementById("subtext").textContent = `Roll ${next+2} of ${FACES.length}`;
+        btn.disabled = false; btn.textContent = "🎲  Roll Again";
+      }
+    }
+  }, 80);
+}
+
+function resetAll() {
+  rollIndex = -1; isRolling = false;
+  document.getElementById("dice").className = "dice";
+  document.getElementById("dice").style.background = "linear-gradient(145deg, #334155, #475569)";
+  drawDots(1);
+  document.getElementById("resultArea").innerHTML = "";
+  document.getElementById("history").innerHTML = "";
+  document.getElementById("subtext").textContent = "Roll 1 of 4";
+  document.getElementById("btnArea").innerHTML = `<button class="btn btn-roll" id="rollBtn" onclick="roll()">🎲  Roll the Dice</button>`;
+}
+
+drawDots(1);
+</script>
+</body>
+</html>
